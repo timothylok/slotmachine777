@@ -9,6 +9,11 @@ Built with Next.js (App Router) + TypeScript, and deployable to Vercel with no
 configuration. Player accounts are handled by Supabase, with a guest mode that
 works without any backend at all.
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftimothylok%2Fslotmachine777&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY&envDescription=Supabase%20project%20URL%20and%20anon%20key%20-%20leave%20blank%20to%20run%20in%20guest-only%20mode&envLink=https%3A%2F%2Fgithub.com%2Ftimothylok%2Fslotmachine777%23accounts-supabase)
+
+> The two environment variables are optional. Deploy without them and the game
+> runs in guest-only mode; add them later and sign-in switches on.
+
 ## Features
 
 - **5×3 reels, 5 paylines**, weighted per-reel strips (later reels carry fewer
