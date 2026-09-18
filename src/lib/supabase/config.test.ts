@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { looksLikeRealCredentials } from "./config";
+import { afterEach, describe, expect, it } from "vitest";
+import { looksLikeRealCredentials, readSupabaseEnv } from "./config";
 
 const KEY = "sb-anon-key-that-is-long-enough-to-be-real";
 
@@ -37,5 +37,36 @@ describe("looksLikeRealCredentials", () => {
     expect(looksLikeRealCredentials("https://abcdefgh.supabase.co", "short")).toBe(
       false,
     );
+  });
+});
+
+describe("readSupabaseEnv", () => {
+  const saved = { ...process.env };
+  afterEach(() => {
+    process.env = { ...saved };
+  });
+
+  it("reads the private (unprefixed) variable names", () => {
+    process.env.SUPABASE_URL = "https://abcdefgh.supabase.co";
+    process.env.SUPABASE_ANON_KEY = KEY;
+    expect(readSupabaseEnv()).toEqual({
+      url: "https://abcdefgh.supabase.co",
+      anonKey: KEY,
+      configured: true,
+    });
+  });
+
+  it("ignores NEXT_PUBLIC_ variants, which must no longer be used", () => {
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_ANON_KEY;
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://abcdefgh.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = KEY;
+    expect(readSupabaseEnv().configured).toBe(false);
+  });
+
+  it("reports unconfigured when the variables are missing", () => {
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_ANON_KEY;
+    expect(readSupabaseEnv()).toEqual({ url: "", anonKey: "", configured: false });
   });
 });

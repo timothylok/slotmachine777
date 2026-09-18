@@ -11,7 +11,7 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { UNCONFIGURED, type SupabaseConfig } from "@/lib/supabase/config";
 import {
   DEFAULT_STATE,
   GUEST_FLAG_KEY,
@@ -57,10 +57,17 @@ export function usePlayer(): PlayerContextValue {
 
 export default function PlayerProvider({
   children,
+  supabaseConfig = UNCONFIGURED,
 }: {
   children: React.ReactNode;
+  /** Supplied by the server component; the browser never reads process.env. */
+  supabaseConfig?: SupabaseConfig;
 }) {
-  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+  const { url, anonKey, configured: isSupabaseConfigured } = supabaseConfig;
+  const supabase = useMemo(
+    () => getSupabaseBrowserClient({ url, anonKey, configured: isSupabaseConfigured }),
+    [url, anonKey, isSupabaseConfigured],
+  );
   const [mode, setMode] = useState<AuthMode>("loading");
   const [user, setUser] = useState<User | null>(null);
   const [state, setState] = useState<GameState>(DEFAULT_STATE);
@@ -125,7 +132,7 @@ export default function PlayerProvider({
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, isSupabaseConfigured]);
 
   // --- persistence -------------------------------------------------------
   const flush = useCallback(() => {
@@ -274,7 +281,7 @@ export default function PlayerProvider({
     const guest = guestStore.load();
     setState(guest);
     latestState.current = guest;
-  }, [flush, supabase]);
+  }, [flush, supabase, isSupabaseConfigured]);
 
   const continueAsGuest = useCallback(() => {
     try {

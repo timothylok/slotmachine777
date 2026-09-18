@@ -1,19 +1,16 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  SUPABASE_ANON_KEY,
-  SUPABASE_URL,
-  isSupabaseConfigured,
-} from "./config";
+import { readSupabaseEnv } from "./config";
 import type { Database } from "./types";
 
 /** Server-side client bound to the request's cookies. Null when unconfigured. */
 export async function getSupabaseServerClient(): Promise<SupabaseClient<Database> | null> {
-  if (!isSupabaseConfigured) return null;
+  const { url, anonKey, configured } = readSupabaseEnv();
+  if (!configured) return null;
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  return createServerClient<Database>(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -25,7 +22,7 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient<Database
           }
         } catch {
           // Called from a Server Component, where cookies are read-only.
-          // The middleware refreshes the session instead.
+          // The proxy refreshes the session instead.
         }
       },
     },

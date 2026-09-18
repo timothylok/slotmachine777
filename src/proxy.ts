@@ -1,10 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import {
-  SUPABASE_ANON_KEY,
-  SUPABASE_URL,
-  isSupabaseConfigured,
-} from "@/lib/supabase/config";
+import { readSupabaseEnv } from "@/lib/supabase/config";
 
 /**
  * Refreshes the Supabase auth cookie on every navigation. Without this the
@@ -12,11 +8,12 @@ import {
  * (Next.js 16 renamed the middleware convention to `proxy`.)
  */
 export default async function proxy(request: NextRequest) {
-  if (!isSupabaseConfigured) return NextResponse.next();
+  const { url, anonKey, configured } = readSupabaseEnv();
+  if (!configured) return NextResponse.next();
 
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

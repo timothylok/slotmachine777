@@ -1,10 +1,17 @@
 import SlotMachine from "@/components/SlotMachine";
 import AuthGate from "@/components/AuthGate";
 import PlayerProvider from "@/components/PlayerProvider";
+import { readSupabaseEnv } from "@/lib/supabase/config";
+
+// The credentials are read per request rather than inlined at build time, so
+// rotating a key in Vercel takes effect without a rebuild.
+export const dynamic = "force-dynamic";
 
 export default function Home() {
+  const supabaseConfig = readSupabaseEnv();
+
   return (
-    <PlayerProvider>
+    <PlayerProvider supabaseConfig={supabaseConfig}>
       <main className="page">
         <AuthGate />
         <SlotMachine />

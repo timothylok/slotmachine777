@@ -9,7 +9,7 @@ Built with Next.js (App Router) + TypeScript, and deployable to Vercel with no
 configuration. Player accounts are handled by Supabase, with a guest mode that
 works without any backend at all.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftimothylok%2Fslotmachine777&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY&envDescription=Supabase%20project%20URL%20and%20anon%20key%20-%20leave%20blank%20to%20run%20in%20guest-only%20mode&envLink=https%3A%2F%2Fgithub.com%2Ftimothylok%2Fslotmachine777%23accounts-supabase)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftimothylok%2Fslotmachine777&env=SUPABASE_URL,SUPABASE_ANON_KEY&envDescription=Supabase%20project%20URL%20and%20anon%20key%20-%20leave%20blank%20to%20run%20in%20guest-only%20mode&envLink=https%3A%2F%2Fgithub.com%2Ftimothylok%2Fslotmachine777%23accounts-supabase)
 
 > The two environment variables are optional. Deploy without them and the game
 > runs in guest-only mode; add them later and sign-in switches on.
@@ -67,15 +67,24 @@ deliberate: the game is fully playable before any backend exists.
 3. Copy **Project Settings → API** into `.env.local`:
 
    ```
-   NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
+   SUPABASE_URL=https://<project>.supabase.co
+   SUPABASE_ANON_KEY=<anon key>
    ```
 
-   Both are browser-safe; RLS is what protects the data.
+   Note the absence of a `NEXT_PUBLIC_` prefix. The values are read on the
+   server and passed to the browser through the RSC payload at request time,
+   rather than inlined into the client bundle at build time. That keeps them
+   private values in Vercel and means rotating a key needs no rebuild.
+
+   Never set `SUPABASE_SERVICE_ROLE_KEY` or a Postgres connection string for
+   this app — it only ever uses the anon key, behind RLS.
 4. In **Authentication → URL Configuration**, add `<your-domain>/auth/callback`
    as a redirect URL (and `http://localhost:3000/auth/callback` for local work).
 
-`src/proxy.ts` refreshes the auth cookie on every request, `src/app/auth/callback`
+The page is a Server Component that reads the environment and hands a
+`{ url, anonKey, configured }` object to `<PlayerProvider>`; nothing in the
+browser reads `process.env`. `src/proxy.ts` refreshes the auth cookie on every
+request, `src/app/auth/callback`
 exchanges the one-time code from confirmation, magic-link and reset emails, and
 `PlayerProvider` merges guest progress into a brand-new account on first sign-in.
 
@@ -92,8 +101,8 @@ carried across. That rule lives in `mergeStates()` and is covered by tests.
 ```bash
 npm i -g vercel
 vercel                                    # preview
-vercel env add NEXT_PUBLIC_SUPABASE_URL
-vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
+vercel env add SUPABASE_URL
+vercel env add SUPABASE_ANON_KEY
 vercel --prod
 ```
 
@@ -122,7 +131,7 @@ src/
     profileStore.ts          localStorage and Supabase backends
     authErrors.ts            Supabase error strings → player-readable text
     sound.ts                 Web Audio synthesis
-    supabase/                browser + server clients, config guard, types
+    supabase/                browser + server clients, env reader, types
 supabase/migrations/         SQL for the slot_profiles table and RLS
 scripts/rtp.mts              RTP simulation
 ```
