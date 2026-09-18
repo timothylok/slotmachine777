@@ -8,8 +8,10 @@
 // than baked into the client bundle at build time. That also means rotating a
 // key takes effect without a rebuild.
 //
-// Supabase is optional: until the credentials exist the app runs in guest-only
-// mode rather than crashing. Every call site checks `configured` first.
+// Because the value is published to the browser, this module is deliberately
+// strict about what counts as a usable key. Anything it rejects leaves the app
+// in guest-only mode, which is a clean, visible failure; a key it wrongly
+// accepted would either break at runtime or, worse, be handed to every visitor.
 
 export interface SupabaseConfig {
   url: string;
@@ -17,19 +19,8 @@ export interface SupabaseConfig {
   configured: boolean;
 }
 
-/** A placeholder in .env.example must not count as configured. */
-export function looksLikeRealCredentials(url: string, key: string): boolean {
-  if (!url || !key) return false;
-  if (url.includes("your-project") || key.includes("your-anon-key")) return false;
-  // A key with whitespace in it is a paste accident, not a credential.
-  if (/\s/.test(key)) return false;
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "https:" && key.length > 20;
-  } catch {
-    return false;
-  }
-}
+const PUBLISHABLE_PREFIX = "sb_publishable_";
+const SECRET_PREFIX = "sb_secret_";
 
 /**
  * Takes the first line only, and trims it.
@@ -43,6 +34,52 @@ export function looksLikeRealCredentials(url: string, key: string): boolean {
  */
 export function firstLine(value: string): string {
   return value.split(/[\r\n]/, 1)[0].trim();
+}
+
+/** The `role` claim of a Supabase JWT, or null if this isn't one. */
+export function jwtRole(key: string): string | null {
+  const parts = key.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+    const payload = JSON.parse(atob(padded)) as { role?: unknown };
+    return typeof payload.role === "string" ? payload.role : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * True only for a key that is safe to publish to the browser: a legacy `anon`
+ * JWT, or a new-style publishable key.
+ *
+ * A `service_role` JWT and an `sb_secret_` key are rejected explicitly. Those
+ * bypass row-level security on every table in the project, so handing one to
+ * the browser would expose the entire database — including any other
+ * application sharing the same Supabase project.
+ */
+export function isPublishableKey(key: string): boolean {
+  if (!key || /\s/.test(key)) return false;
+  if (key.startsWith(SECRET_PREFIX)) return false;
+  if (key.startsWith(PUBLISHABLE_PREFIX)) {
+    return key.length > PUBLISHABLE_PREFIX.length + 8;
+  }
+  // Legacy keys are JWTs; accept the anon role only.
+  return jwtRole(key) === "anon";
+}
+
+/** A placeholder in .env.example must not count as configured. */
+export function looksLikeRealCredentials(url: string, key: string): boolean {
+  if (!url || !key) return false;
+  if (url.includes("your-project") || key.includes("your-anon-key")) return false;
+  if (!isPublishableKey(key)) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 /**

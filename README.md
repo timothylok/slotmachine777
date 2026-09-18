@@ -51,6 +51,7 @@ deliberate: the game is fully playable before any backend exists.
 | `npm test` | Unit tests (Vitest) |
 | `npm run test:watch` | Tests in watch mode |
 | `npm run rtp` | Monte-Carlo the paytable and print RTP / hit rate |
+| `npm run env:check` | Report whether `.env.local` yields a usable Supabase config |
 | `npm run lint` | ESLint |
 
 ## Accounts (Supabase)
@@ -75,6 +76,12 @@ deliberate: the game is fully playable before any backend exists.
    server and passed to the browser through the RSC payload at request time,
    rather than inlined into the client bundle at build time. That keeps them
    private values in Vercel and means rotating a key needs no rebuild.
+
+   Use the `anon` / publishable key, not a `service_role` or `sb_secret_` key.
+   The app validates the shape and refuses a secret key outright, because the
+   value is served to the browser; a secret key bypasses row-level security on
+   every table in the project. Run `npm run env:check` to confirm what the app
+   makes of your settings.
 
    Never set `SUPABASE_SERVICE_ROLE_KEY` or a Postgres connection string for
    this app — it only ever uses the anon key, behind RLS.
