@@ -56,10 +56,14 @@ deliberate: the game is fully playable before any backend exists.
 ## Accounts (Supabase)
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Run `supabase/migrations/0001_profiles.sql` in the SQL editor. It creates the
-   `profiles` table, enables row-level security so a player can only ever read
-   and write their own row, and adds a trigger that seeds a profile when an auth
-   user is created.
+2. Run `supabase/migrations/0001_slot_profiles.sql` in the SQL editor. It
+   creates the `slot_profiles` table and enables row-level security so a player
+   can only ever read and write their own row.
+
+   The table is namespaced `slot_profiles`, and the migration installs no
+   trigger on `auth.users`, so it is safe to run on a project that already hosts
+   other applications. The client upserts a player's row on first save, which is
+   what makes a sign-up trigger unnecessary.
 3. Copy **Project Settings → API** into `.env.local`:
 
    ```
@@ -119,7 +123,7 @@ src/
     authErrors.ts            Supabase error strings → player-readable text
     sound.ts                 Web Audio synthesis
     supabase/                browser + server clients, config guard, types
-supabase/migrations/         SQL for the profiles table and RLS
+supabase/migrations/         SQL for the slot_profiles table and RLS
 scripts/rtp.mts              RTP simulation
 ```
 

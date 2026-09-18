@@ -1,6 +1,8 @@
 /**
- * Minimal hand-written schema for the one table this app owns. Regenerate with
- * `npx supabase gen types typescript --project-id <id>` once the project exists.
+ * Minimal hand-written schema for the one table this app owns. The table is
+ * namespaced `slot_profiles` so the app can share a Supabase project with
+ * unrelated applications. Regenerate with
+ * `npx supabase gen types typescript --project-id <id>`.
  */
 export type PlayerProfile = {
   id: string;
@@ -18,7 +20,7 @@ export type PlayerProfileUpdate = Partial<
 export type Database = {
   public: {
     Tables: {
-      profiles: {
+      slot_profiles: {
         Row: PlayerProfile;
         Insert: Partial<PlayerProfile> & { id: string };
         Update: PlayerProfileUpdate;

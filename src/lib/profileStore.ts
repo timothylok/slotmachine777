@@ -36,13 +36,13 @@ export const guestStore = {
   },
 };
 
-/** Signed-in progress lives in the `profiles` table, one row per user. */
+/** Signed-in progress lives in the `slot_profiles` table, one row per user. */
 export async function loadProfile(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<GameState> {
   const { data, error } = await supabase
-    .from("profiles")
+    .from("slot_profiles")
     .select("credits, best_win, spins")
     .eq("id", userId)
     .maybeSingle();
@@ -64,7 +64,7 @@ export async function saveProfile(
   userId: string,
   state: GameState,
 ): Promise<void> {
-  await supabase.from("profiles").upsert(
+  await supabase.from("slot_profiles").upsert(
     {
       id: userId,
       credits: state.credits,
