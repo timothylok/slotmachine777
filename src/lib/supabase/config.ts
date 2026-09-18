@@ -21,6 +21,8 @@ export interface SupabaseConfig {
 export function looksLikeRealCredentials(url: string, key: string): boolean {
   if (!url || !key) return false;
   if (url.includes("your-project") || key.includes("your-anon-key")) return false;
+  // A key with whitespace in it is a paste accident, not a credential.
+  if (/\s/.test(key)) return false;
   try {
     const parsed = new URL(url);
     return parsed.protocol === "https:" && key.length > 20;
@@ -30,12 +32,26 @@ export function looksLikeRealCredentials(url: string, key: string): boolean {
 }
 
 /**
+ * Takes the first line only, and trims it.
+ *
+ * Pasting a multi-line block into a single env var is an easy mistake, and
+ * because these values are handed to the browser, a stray second line would be
+ * published along with them — which is exactly how a service-role key could
+ * leak. Anything after the first newline is dropped and never leaves the
+ * server. An embedded newline also makes fetch reject the auth header outright
+ * ("Invalid value"), so trimming fixes a real failure as well as a leak.
+ */
+export function firstLine(value: string): string {
+  return value.split(/[\r\n]/, 1)[0].trim();
+}
+
+/**
  * Server-side only — reading these on the client yields empty strings, which is
  * the point. Call it from a Server Component, route handler or proxy.
  */
 export function readSupabaseEnv(): SupabaseConfig {
-  const url = process.env.SUPABASE_URL ?? "";
-  const anonKey = process.env.SUPABASE_ANON_KEY ?? "";
+  const url = firstLine(process.env.SUPABASE_URL ?? "");
+  const anonKey = firstLine(process.env.SUPABASE_ANON_KEY ?? "");
   return { url, anonKey, configured: looksLikeRealCredentials(url, anonKey) };
 }
 

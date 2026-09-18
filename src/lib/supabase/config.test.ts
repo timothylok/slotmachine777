@@ -70,3 +70,39 @@ describe("readSupabaseEnv", () => {
     expect(readSupabaseEnv()).toEqual({ url: "", anonKey: "", configured: false });
   });
 });
+
+describe("multi-line paste protection", () => {
+  const saved = { ...process.env };
+  afterEach(() => {
+    process.env = { ...saved };
+  });
+
+  const SERVICE_KEY = "sb-service-role-key-that-must-never-be-published";
+
+  it("keeps only the first line, so a second variable cannot be published", () => {
+    process.env.SUPABASE_URL = "https://abcdefgh.supabase.co";
+    process.env.SUPABASE_ANON_KEY = `${KEY}\nSUPABASE_SERVICE_ROLE_KEY=${SERVICE_KEY}`;
+
+    const config = readSupabaseEnv();
+    expect(config.anonKey).toBe(KEY);
+    expect(config.anonKey).not.toContain(SERVICE_KEY);
+    expect(JSON.stringify(config)).not.toContain(SERVICE_KEY);
+    expect(config.configured).toBe(true);
+  });
+
+  it("handles CRLF and surrounding whitespace", () => {
+    process.env.SUPABASE_URL = `  https://abcdefgh.supabase.co  \r\njunk`;
+    process.env.SUPABASE_ANON_KEY = `  ${KEY}\r\nmore junk`;
+    expect(readSupabaseEnv()).toEqual({
+      url: "https://abcdefgh.supabase.co",
+      anonKey: KEY,
+      configured: true,
+    });
+  });
+
+  it("rejects a key with whitespace inside it", () => {
+    expect(
+      looksLikeRealCredentials("https://abcdefgh.supabase.co", "abc def ghi jkl mno pqr"),
+    ).toBe(false);
+  });
+});
