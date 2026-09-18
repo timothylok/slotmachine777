@@ -774,12 +774,24 @@ kbd {
 .account {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 4px 4px 12px;
+  gap: 12px;
+  padding: 4px 14px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.32);
   border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 13px;
+}
+
+/* With a trailing button the chip only needs padding on the label side, and
+   the button shrinks so the chip matches the height of its header neighbours. */
+.account:has(.btn) {
+  padding-right: 4px;
+}
+
+.account .btn {
+  padding: 6px 13px;
+  font-size: 13px;
+  border-radius: 999px;
 }
 
 .account-name {
